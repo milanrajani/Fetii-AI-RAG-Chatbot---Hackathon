@@ -442,13 +442,13 @@ def render_sidebar():
             """, unsafe_allow_html=True)
         except FileNotFoundError:
             # Fallback if logo file is not found
-            st.markdown("""
+    st.markdown("""
             <div style="text-align: center; margin-bottom: 20px;">
                 <h2 style="color: #1f77b4; margin: 0; font-size: 24px; font-weight: bold;">🚗 Fetii</h2>
                 <p style="color: #666; margin: 5px 0 0 0; font-size: 12px;">AI-Powered Analytics</p>
             </div>
-            """, unsafe_allow_html=True)
-        
+    """, unsafe_allow_html=True)
+    
         st.divider()
         
         # Chat History Section
@@ -600,7 +600,7 @@ def render_sidebar():
                     with col_confirm2:
                         if st.button("❌ Cancel", key=f"confirm_delete_no_{session_id}"):
                             st.session_state[f"confirm_delete_{session_id}"] = False
-                            st.rerun()
+                                st.rerun()
         
         st.divider()
         
@@ -755,20 +755,20 @@ def render_sidebar():
         # Legacy option for separate files (collapsed by default)
         with st.expander("📁 Upload Separate Files (Legacy)", expanded=False):
             st.markdown("*Use this option if you have separate files for trips and users data*")
-            
-            trips_file = st.file_uploader(
-                "Upload Trips Data (Excel)",
-                type=['xlsx', 'xls'],
+        
+        trips_file = st.file_uploader(
+            "Upload Trips Data (Excel)",
+            type=['xlsx', 'xls'],
                 help="Upload your Fetii trips data in Excel format",
                 key="trips_file_legacy"
-            )
-            
-            users_file = st.file_uploader(
-                "Upload Users Data (Excel)",
-                type=['xlsx', 'xls'],
+        )
+        
+        users_file = st.file_uploader(
+            "Upload Users Data (Excel)",
+            type=['xlsx', 'xls'],
                 help="Upload your Fetii users data in Excel format",
                 key="users_file_legacy"
-            )
+        )
         
         # Load data button
         if st.button("Load Data", disabled=not (data_file or trips_file or users_file)):
@@ -778,10 +778,10 @@ def render_sidebar():
                     success = st.session_state.chatbot.load_data(data_file=data_file)
                 else:
                     # Legacy method: separate files
-                    success = st.session_state.chatbot.load_data(
+                success = st.session_state.chatbot.load_data(
                         trips_file=trips_file.name if trips_file else None,
                         users_file=users_file.name if users_file else None
-                    )
+                )
                 
                 if success:
                     st.session_state.data_loaded = True
@@ -838,7 +838,7 @@ def render_sidebar():
                         if data_file:
                             success = st.session_state.chatbot.load_data(data_file=data_file)
                             if success:
-                                st.session_state.data_loaded = True
+                        st.session_state.data_loaded = True
                                 st.success("✅ Data loaded successfully!")
                                 st.rerun()
                             else:
@@ -922,7 +922,7 @@ def render_sidebar():
                 st.error(f"❌ Error processing uploaded file: {str(e)}")
         
         return
-
+    
 def render_main_content():
     """Render the main content area with navigation and interfaces"""
     # Navigation menu
@@ -960,7 +960,7 @@ def chat_interface():
     # Chat controls
     col1, col2 = st.columns([3, 1])
     with col1:
-        st.subheader("💡 Try these sample questions:")
+    st.subheader("💡 Try these sample questions:")
     with col2:
         if st.button("🗑️ Clear Chat", help="Clear current chat history"):
             st.session_state.chat_history = []
@@ -1040,9 +1040,9 @@ def chat_interface():
         col1, col2 = st.columns([3, 1])
         
         with col1:
-            user_input = st.text_input(
-                "Ask a question about the rideshare data:",
-                key="user_input",
+    user_input = st.text_input(
+        "Ask a question about the rideshare data:",
+        key="user_input",
                 placeholder="Ask a question about the rideshare data...",
                 label_visibility="collapsed"
             )

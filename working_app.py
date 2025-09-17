@@ -10,6 +10,7 @@ import io
 import json
 import uuid
 import numpy as np
+import glob
 
 # Import our custom modules
 from chatbot import FetiiChatbot
@@ -163,13 +164,6 @@ def auto_load_app():
             st.session_state.api_key = api_key
             st.session_state.api_key_entered = True
             st.success("✅ API Key loaded automatically!")
-            
-            # If data was already loaded, transfer it to the chatbot
-            if st.session_state.data_loaded and hasattr(st.session_state, 'trips_data'):
-                st.session_state.chatbot.data_processor.trips_data = st.session_state.trips_data
-                st.session_state.chatbot.data_processor.users_data = st.session_state.users_data
-                st.session_state.chatbot.data_processor.process_data()
-                st.info("🔄 Data transferred to chatbot successfully!")
         except Exception as e:
             st.error(f"Error initializing chatbot: {str(e)}")
     
@@ -183,7 +177,6 @@ def auto_load_app():
             st.info("🔍 Found FetiiAI_Data_Austin.xlsx file, loading directly...")
         else:
             # Look for any Excel file as fallback
-            import glob
             excel_files = glob.glob('*.xlsx')
             if excel_files:
                 data_file = excel_files[0]
@@ -199,6 +192,15 @@ def auto_load_app():
                         st.session_state.loaded_data_file = data_file
                         save_session_data()
                         st.success(f"✅ Data loaded successfully from {data_file}!")
+                        
+                        # Transfer data to chatbot if it exists
+                        if st.session_state.chatbot and hasattr(st.session_state.chatbot, 'data_processor'):
+                            st.session_state.chatbot.data_processor.trips_data = st.session_state.trips_data
+                            st.session_state.chatbot.data_processor.users_data = st.session_state.users_data
+                            # Process the data to ensure it's properly loaded
+                            if hasattr(st.session_state.chatbot.data_processor, 'process_data'):
+                                st.session_state.chatbot.data_processor.process_data()
+                            st.info("🔄 Data transferred to chatbot successfully!")
                     else:
                         st.warning(f"⚠️ Failed to load data from {data_file}")
             except Exception as e:
@@ -217,6 +219,16 @@ def auto_load_app():
                                 st.session_state.loaded_data_file = 'FetiiAI_Data_Austin.xlsx (Pre-loaded)'
                                 save_session_data()
                                 st.success("✅ Pre-loaded data loaded successfully!")
+                                
+                                # Transfer data to chatbot if it exists
+                                if st.session_state.chatbot and hasattr(st.session_state.chatbot, 'data_processor'):
+                                    st.session_state.chatbot.data_processor.trips_data = st.session_state.trips_data
+                                    st.session_state.chatbot.data_processor.users_data = st.session_state.users_data
+                                    # Process the data to ensure it's properly loaded
+                                    if hasattr(st.session_state.chatbot.data_processor, 'process_data'):
+                                        st.session_state.chatbot.data_processor.process_data()
+                                    st.info("🔄 Data transferred to chatbot successfully!")
+                                
                                 st.info("💡 Upload your own data file using the file uploader in the sidebar")
                             else:
                                 st.warning("⚠️ Failed to load pre-loaded data")
@@ -355,15 +367,16 @@ def render_sidebar():
     """Render the sidebar with configuration and data upload"""
     with st.sidebar:
         st.title("🚗 FetiiAI")
-        st.markdown("---")
+        # st.markdown("---")
         
         # Configuration Section
-        st.header("🔧 Configuration")
+        # st.header("🔧 Configuration")
         
         # Show API key status
         if st.session_state.api_key_entered and st.session_state.chatbot:
-            st.success("✅ API Key configured")
-            st.info("🔑 Ready for AI responses")
+            # st.success("✅ API Key configured")
+            # st.info("🔑 Ready for AI responses")
+            pass
         else:
             st.warning("⚠️ API key not configured")
             
@@ -393,9 +406,10 @@ def render_sidebar():
         
         # Show data status
         if st.session_state.data_loaded:
-            st.success("✅ Data loaded automatically")
-            st.info("📊 Ready for analysis")
-            
+            # st.success("✅ Data loaded automatically")
+            # st.info("📊 Ready for analysis")
+            pass 
+
             # Show data file info
             if hasattr(st.session_state, 'loaded_data_file') and st.session_state.loaded_data_file:
                 st.info(f"📁 File: {st.session_state.loaded_data_file}")
@@ -409,65 +423,111 @@ def render_sidebar():
             if st.button("🚀 Auto-Load FetiiAI_Data_Austin.xlsx", type="primary", help="Automatically load the data file from the directory"):
                 force_load_data()
         
+        # Debug information
+        with st.expander("App Overview", expanded=True):
+            st.write(f"**API Key Configured:** {st.session_state.api_key_entered}")
+            # st.write(f"**Data Loaded:** {st.session_state.data_loaded}")
+            # st.write(f"**Chatbot Object:** {st.session_state.chatbot is not None}")
+            # st.write(f"**Auto Loaded:** {st.session_state.auto_loaded}")
+            # if hasattr(st.session_state, 'loaded_data_file'):
+            #     st.write(f"**Loaded File:** {st.session_state.loaded_data_file}")
+            
+            # Check if chatbot has data
+            if st.session_state.chatbot:
+                if hasattr(st.session_state.chatbot, 'data_processor'):
+                    if hasattr(st.session_state.chatbot.data_processor, 'trips_data'):
+                        trips_count = len(st.session_state.chatbot.data_processor.trips_data) if st.session_state.chatbot.data_processor.trips_data is not None else 0
+                        st.write(f"**Chatbot Trips Data:** {trips_count}")
+                    else:
+                        st.write("**Chatbot Trips Data: Not available")
+                else:
+                    st.write("**Chatbot Data Processor:** Not available")
+            else:
+                st.write("**Chatbot:** Not initialized")
+            
+            # Add manual reload button for FetiiAI file
+            if st.button("🔄Load FetiiAI Data into Chatbot"):
+                if os.path.exists('FetiiAI_Data_Austin.xlsx'):
+                    with st.spinner("Reloading FetiiAI_Data_Austin.xlsx into chatbot..."):
+                        if st.session_state.chatbot:
+                            success = st.session_state.chatbot.load_data(data_file='FetiiAI_Data_Austin.xlsx')
+                            if success:
+                                st.session_state.data_loaded = True
+                                st.session_state.loaded_data_file = 'FetiiAI_Data_Austin.xlsx'
+                                save_session_data()
+                                st.success("✅ Data reloaded successfully!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to reload data")
+                        else:
+                            st.error("❌ Chatbot not initialized")
+                else:
+                    st.error("❌ FetiiAI_Data_Austin.xlsx not found")
+            
+            # Check for data file
+            if os.path.exists('FetiiAI_Data_Austin.xlsx'):
+                st.write(f"**Found Data File:** FetiiAI_Data_Austin.xlsx")
+            else:
+                st.write(f"**Found Data File:** None")
+        
         # Manual data upload
-        data_file = st.file_uploader(
-            "Upload Excel Data File",
-            type=['xlsx', 'xls'],
-            help="Upload your FetiiAI_Data_Austin.xlsx file or any Excel file with rideshare data"
-        )
+        # data_file = st.file_uploader(
+        #     "Upload Excel Data File",
+        #     type=['xlsx', 'xls'],
+           
+        # )
         
         # Load data button
-        if st.button("Load Data", disabled=not data_file):
-            if st.session_state.chatbot:
-                if data_file:
-                    try:
-                        # Handle uploaded file - save to temporary location
-                        import tempfile
-                        import os
-                        import time
+        # if st.button("Load Data", disabled=not data_file):
+        #     if st.session_state.chatbot:
+        #         if data_file:
+        #             try:
+        #                 # Handle uploaded file - save to temporary location
+        #                 import tempfile
+        #                 import time
                         
-                        # Create temporary file with unique name
-                        temp_dir = tempfile.gettempdir()
-                        temp_filename = f"fetii_data_{int(time.time())}.xlsx"
-                        temp_path = os.path.join(temp_dir, temp_filename)
+        #                 # Create temporary file with unique name
+        #                 temp_dir = tempfile.gettempdir()
+        #                 temp_filename = f"fetii_data_{int(time.time())}.xlsx"
+        #                 temp_path = os.path.join(temp_dir, temp_filename)
                         
-                        # Write file content
-                        with open(temp_path, 'wb') as tmp_file:
-                            tmp_file.write(data_file.getvalue())
+        #                 # Write file content
+        #                 with open(temp_path, 'wb') as tmp_file:
+        #                     tmp_file.write(data_file.getvalue())
                         
-                        # Small delay to ensure file is written
-                        time.sleep(0.1)
+        #                 # Small delay to ensure file is written
+        #                 time.sleep(0.1)
                         
-                        # Load data using the temporary file path
-                        success = st.session_state.chatbot.load_data(data_file=temp_path)
+        #                 # Load data using the temporary file path
+        #                 success = st.session_state.chatbot.load_data(data_file=temp_path)
                         
-                        # Clean up temporary file
-                        try:
-                            os.unlink(temp_path)
-                        except:
-                            pass  # Ignore cleanup errors
+        #                 # Clean up temporary file
+        #                 try:
+        #                     os.unlink(temp_path)
+        #                 except:
+        #                     pass  # Ignore cleanup errors
                         
-                        if success:
-                            st.session_state.data_loaded = True
-                            save_session_data()
-                            st.success("✅ Data loaded successfully!")
-                            st.rerun()
-                        else:
-                            st.error("❌ Error loading data. Please check the file format.")
-                    except Exception as e:
-                        st.error(f"❌ Error processing file: {str(e)}")
-                        # Try to clean up temp file if it exists
-                        try:
-                            if 'temp_path' in locals():
-                                os.unlink(temp_path)
-                        except:
-                            pass
-                else:
-                    st.warning("⚠️ Please select a file first.")
-            else:
-                st.error("❌ Please configure API key first.")
+        #                 if success:
+        #                     st.session_state.data_loaded = True
+        #                     save_session_data()
+        #                     st.success("✅ Data loaded successfully!")
+        #                     st.rerun()
+        #                 else:
+        #                     st.error("❌ Error loading data. Please check the file format.")
+        #             except Exception as e:
+        #                 st.error(f"❌ Error processing file: {str(e)}")
+        #                 # Try to clean up temp file if it exists
+        #                 try:
+        #                     if 'temp_path' in locals():
+        #                         os.unlink(temp_path)
+        #                 except:
+        #                     pass
+        #         else:
+        #             st.warning("⚠️ Please select a file first.")
+        #     else:
+        #         st.error("❌ Please configure API key first.")
         
-        st.markdown("---")
+        # st.markdown("---")
         
         # Chat Management
         st.header("💬 Chat Management")
@@ -478,7 +538,7 @@ def render_sidebar():
             created_at = session_info.get('created_at', 'Unknown')
             message_count = len(session_info.get('messages', []))
             
-            st.info(f"**Current Session:**\n📅 Created: {created_at[:10] if created_at != 'Unknown' else 'Unknown'}\n💬 Messages: {message_count}")
+            st.info(f"**Current Session:**\n📅 Created: {created_at[:10] if created_at != 'Unknown' else 'Unknown'}\n Messages: {message_count}")
         
         # Chat session list
         if st.session_state.chat_sessions:
@@ -543,7 +603,7 @@ def chat_interface():
     cols = st.columns(2)
     for i, question in enumerate(sample_questions):
         with cols[i % 2]:
-            if st.button(f"❓ {question}", key=f"sample_{i}"):
+            if st.button(f" {question}", key=f"sample_{i}"):
                 # Process the question directly
                 if st.session_state.chatbot:
                     # Create new chat session if none exists
@@ -1324,14 +1384,14 @@ def render_main_content():
         orientation="horizontal",
         styles={
             "container": {"padding": "0!important", "background-color": "#262730"},
-            "icon": {"color": "#ff6b6b", "font-size": "25px"},
+            "icon": {"color": "#FFFFFF", "font-size": "25px"},
             "nav-link": {
                 "font-size": "16px",
                 "text-align": "center",
                 "margin": "0px",
                 "--hover-color": "#444"
             },
-            "nav-link-selected": {"background-color": "#ff6b6b"},
+            "nav-link-selected": {"background-color": "#6200cb"},
         }
     )
     
@@ -1360,6 +1420,17 @@ def force_load_data():
                 if success:
                     st.session_state.data_loaded = True
                     st.session_state.loaded_data_file = 'FetiiAI_Data_Austin.xlsx'
+                    
+                    # Transfer data to chatbot if it exists
+                    if st.session_state.chatbot and hasattr(st.session_state.chatbot, 'data_processor'):
+                        st.info("🔄 Transferring data to chatbot...")
+                        st.session_state.chatbot.data_processor.trips_data = st.session_state.trips_data
+                        st.session_state.chatbot.data_processor.users_data = st.session_state.users_data
+                        # Process the data to ensure it's properly loaded
+                        if hasattr(st.session_state.chatbot.data_processor, 'process_data'):
+                            st.session_state.chatbot.data_processor.process_data()
+                        st.success("✅ Data transferred to chatbot successfully!")
+                    
                     save_session_data()
                     st.success("✅ Data loaded automatically from FetiiAI_Data_Austin.xlsx!")
                     st.info(f"📊 Loaded {len(st.session_state.trips_data)} trips")
@@ -1383,6 +1454,17 @@ def force_load_data():
                     if success:
                         st.session_state.data_loaded = True
                         st.session_state.loaded_data_file = 'FetiiAI_Data_Austin.xlsx (Pre-loaded)'
+                        
+                        # Transfer data to chatbot if it exists
+                        if st.session_state.chatbot and hasattr(st.session_state.chatbot, 'data_processor'):
+                            st.info("🔄 Transferring data to chatbot...")
+                            st.session_state.chatbot.data_processor.trips_data = st.session_state.trips_data
+                            st.session_state.chatbot.data_processor.users_data = st.session_state.users_data
+                            # Process the data to ensure it's properly loaded
+                            if hasattr(st.session_state.chatbot.data_processor, 'process_data'):
+                                st.session_state.chatbot.data_processor.process_data()
+                            st.success("✅ Data transferred to chatbot successfully!")
+                        
                         save_session_data()
                         st.success("✅ Pre-loaded data loaded successfully!")
                         st.info(f"📊 Loaded {len(st.session_state.trips_data)} trips")
@@ -1416,6 +1498,25 @@ def main():
     # Force load data again if still not loaded
     if not st.session_state.data_loaded:
         force_load_data()
+    
+    # Ensure data is transferred to chatbot if both exist
+    if (st.session_state.chatbot and 
+        hasattr(st.session_state.chatbot, 'data_processor') and 
+        st.session_state.data_loaded and 
+        hasattr(st.session_state, 'trips_data') and 
+        st.session_state.trips_data is not None):
+        
+        # Check if chatbot data processor is empty
+        if (st.session_state.chatbot.data_processor.trips_data is None or 
+            len(st.session_state.chatbot.data_processor.trips_data) == 0):
+            
+            st.info("🔄 Transferring loaded data to chatbot...")
+            st.session_state.chatbot.data_processor.trips_data = st.session_state.trips_data
+            st.session_state.chatbot.data_processor.users_data = st.session_state.users_data
+            # Process the data to ensure it's properly loaded
+            if hasattr(st.session_state.chatbot.data_processor, 'process_data'):
+                st.session_state.chatbot.data_processor.process_data()
+            st.success("✅ Data transferred to chatbot successfully!")
     
     # Render sidebar
     render_sidebar()

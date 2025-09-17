@@ -51,6 +51,7 @@ class FetiiDataProcessor:
                 # Try to open the file
                 try:
                     excel_file = pd.ExcelFile(data_file)
+                    st.info(f"📋 Found sheets: {excel_file.sheet_names}")
                 except PermissionError as e:
                     st.error(f"❌ Permission denied: {str(e)}")
                     st.info("💡 Please close the Excel file if it's open and try again")
@@ -87,6 +88,7 @@ class FetiiDataProcessor:
                     self.users_data = pd.read_excel(data_file, sheet_name=demo_sheet)
                 
                 # Show available tabs
+                pass
             
             # Legacy method: separate files (for backward compatibility)
             elif trips_file or users_file:
@@ -97,9 +99,13 @@ class FetiiDataProcessor:
                     self.users_data = pd.read_excel(users_file)
             
             if self.trips_data is not None:
+                st.info(f"✅ Loaded {len(self.trips_data)} trips")
                 self._preprocess_data()
                 # Merge trips with user demographics for age-based analysis
                 self._merge_trips_with_demographics()
+                st.success("✅ Data preprocessing completed!")
+            else:
+                st.warning("⚠️ No trips data loaded")
             return True
         except Exception as e:
             st.error(f"❌ Error loading data: {str(e)}")
@@ -351,6 +357,7 @@ class FetiiDataProcessor:
             df = df.dropna()
             
             if df.empty:
+                return go.Figure()
                 return go.Figure()
             
             if chart_type == "bar":

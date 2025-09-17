@@ -1,4 +1,3 @@
-
 import os
 import pandas as pd
 from typing import Dict, List, Any, Optional
@@ -9,7 +8,6 @@ from langchain.memory import ConversationBufferMemory
 from langchain.chains import ConversationChain
 from data_processor import FetiiDataProcessor
 import streamlit as st
-# Removed sample data generation - using real FetiiAI data instead
 
 class FetiiChatbot:
     """GPT-powered chatbot for Fetii rideshare data analysis"""
@@ -120,7 +118,6 @@ class FetiiChatbot:
                 st.exception(e)
                 data_query = {"type": "general", "visualization": None}
             
-            
             if data_query:
                 # Fetch relevant data
                 try:
@@ -194,8 +191,6 @@ class FetiiChatbot:
         """Analyze the question to determine what data to fetch - enhanced with RAG capabilities"""
         question_lower = question.lower()
         
-        # Debug: Show what we're analyzing
-        
         # Extract key information from the question
         analysis = {
             "type": "general",
@@ -218,12 +213,12 @@ class FetiiChatbot:
             analysis["time_period"] = time_period
         
         # Check for age group mentions
-            if "18-24" in question_lower or "18 to 24" in question_lower:
-             analysis["filters"]["age_group"] = "18-24"
-            elif "25-34" in question_lower or "25 to 34" in question_lower:
-             analysis["filters"]["age_group"] = "25-34"
-            elif "35-44" in question_lower or "35 to 44" in question_lower:
-             analysis["filters"]["age_group"] = "35-44"
+        if "18-24" in question_lower or "18 to 24" in question_lower:
+            analysis["filters"]["age_group"] = "18-24"
+        elif "25-34" in question_lower or "25 to 34" in question_lower:
+            analysis["filters"]["age_group"] = "25-34"
+        elif "35-44" in question_lower or "35 to 44" in question_lower:
+            analysis["filters"]["age_group"] = "35-44"
         elif "45+" in question_lower or "45 and up" in question_lower:
             analysis["filters"]["age_group"] = "45+"
         
@@ -396,7 +391,6 @@ class FetiiChatbot:
         
         query_type = query.get("type")
         filters = query.get("filters", {})
-        
         
         # Handle specific query types with enhanced analysis
         if query_type == "destination_search":
@@ -644,142 +638,6 @@ class FetiiChatbot:
                         context_parts.append(f"- No trips found to {destination}")
                         context_parts.append("- Available destinations include various locations in Austin")
             
-            # For top destinations queries
-            elif query.get("type") == "top_destinations":
-                if 'destination' in data.columns and 'trip_count' in data.columns:
-                    context_parts.append("- Top destinations with trip counts:")
-                    for _, row in data.head(10).iterrows():
-                        context_parts.append(f"  * {row['destination']}: {row['trip_count']} trips")
-                else:
-                    context_parts.append("- Destination analysis available")
-            
-            # For hourly patterns queries
-            elif query.get("type") == "hourly_patterns":
-                if 'hour' in data.columns and 'trip_count' in data.columns:
-                    context_parts.append("- Hourly trip distribution:")
-                    for _, row in data.iterrows():
-                        context_parts.append(f"  * Hour {row['hour']}: {row['trip_count']} trips")
-                else:
-                    context_parts.append("- Time pattern analysis available")
-            
-            # For group size analysis queries
-            elif query.get("type") == "group_size_analysis":
-                analysis_result = self.data_processor.analyze_group_size_patterns(filters)
-                if analysis_result and not analysis_result.get("error"):
-                    context_parts.append("- Group Size Analysis Results:")
-                    stats = analysis_result.get("group_size_stats", {})
-                    context_parts.append(f"  * Average group size: {stats.get('mean', 0):.2f}")
-                    context_parts.append(f"  * Median group size: {stats.get('median', 0):.2f}")
-                    context_parts.append(f"  * Most common group size: {stats.get('mode', 'N/A')}")
-                    context_parts.append(f"  * Group size range: {stats.get('min', 0)} - {stats.get('max', 0)}")
-                    
-                    categories = analysis_result.get("size_categories", {})
-                    context_parts.append(f"  * Small groups (1-3): {categories.get('small_groups_1_3', 0)} trips")
-                    context_parts.append(f"  * Medium groups (4-6): {categories.get('medium_groups_4_6', 0)} trips")
-                    context_parts.append(f"  * Large groups (7-10): {categories.get('large_groups_7_10', 0)} trips")
-                    context_parts.append(f"  * Very large groups (11+): {categories.get('very_large_groups_11plus', 0)} trips")
-                    
-                    if "hourly_group_patterns" in analysis_result:
-                        context_parts.append("- Hourly group size patterns available")
-                    if "daily_group_patterns" in analysis_result:
-                        context_parts.append("- Daily group size patterns available")
-                    if "age_group_correlations" in analysis_result:
-                        context_parts.append("- Age group correlations available")
-            
-            # For hourly analysis queries
-            elif query.get("type") == "hourly_analysis":
-                analysis_result = self.data_processor.analyze_hourly_patterns(filters)
-                if analysis_result and not analysis_result.get("error"):
-                    context_parts.append("- Hourly Pattern Analysis Results:")
-                    context_parts.append(f"  * Total trips analyzed: {analysis_result.get('total_trips', 0)}")
-                    
-                    peak_hours = analysis_result.get("peak_hours", {})
-                    if peak_hours:
-                        context_parts.append(f"  * Peak hours: {peak_hours}")
-                    
-                    time_periods = analysis_result.get("time_periods", {})
-                    if time_periods:
-                        context_parts.append("- Time period distribution:")
-                        for period, count in time_periods.items():
-                            context_parts.append(f"    * {period.replace('_', ' ').title()}: {count} trips")
-                    
-                    if "hourly_group_analysis" in analysis_result:
-                        context_parts.append("- Hourly group size patterns available")
-                    if "large_group_peak_hours" in analysis_result:
-                        context_parts.append("- Large group peak hours analysis available")
-            
-            # For day-of-week analysis queries
-            elif query.get("type") == "day_of_week_analysis":
-                analysis_result = self.data_processor.analyze_day_of_week_patterns(filters)
-                if analysis_result and not analysis_result.get("error"):
-                    context_parts.append("- Day-of-Week Analysis Results:")
-                    context_parts.append(f"  * Total trips analyzed: {analysis_result.get('total_trips', 0)}")
-                    context_parts.append(f"  * Most popular day: {analysis_result.get('most_popular_day', 'N/A')}")
-                    
-                    weekend_vs_weekday = analysis_result.get("weekend_vs_weekday", {})
-                    if weekend_vs_weekday:
-                        context_parts.append(f"  * Weekend trips: {weekend_vs_weekday.get('weekend_trips', 0)}")
-                        context_parts.append(f"  * Weekday trips: {weekend_vs_weekday.get('weekday_trips', 0)}")
-                    
-                    if "daily_group_analysis" in analysis_result:
-                        context_parts.append("- Daily group size patterns available")
-                    if "weekend_vs_weekday_groups" in analysis_result:
-                        context_parts.append("- Weekend vs weekday group size analysis available")
-                    if "daily_destination_patterns" in analysis_result:
-                        context_parts.append("- Daily destination patterns available")
-            
-            # For age group analysis queries
-            elif query.get("type") == "age_group_analysis":
-                analysis_result = self.data_processor.analyze_age_group_correlations(filters)
-                if analysis_result and not analysis_result.get("error"):
-                    context_parts.append("- Age Group Analysis Results:")
-                    context_parts.append(f"  * Total trips analyzed: {analysis_result.get('total_trips', 0)}")
-                    context_parts.append(f"  * Most common age group: {analysis_result.get('most_common_age_group', 'N/A')}")
-                    
-                    age_distribution = analysis_result.get("age_group_distribution", {})
-                    if age_distribution:
-                        context_parts.append("- Age group distribution:")
-                        for age_group, count in age_distribution.items():
-                            context_parts.append(f"    * {age_group}: {count} trips")
-                    
-                    if "age_group_group_sizes" in analysis_result:
-                        context_parts.append("- Age group group size patterns available")
-                    if "large_group_age_preferences" in analysis_result:
-                        context_parts.append("- Large group age preferences available")
-                    if "age_group_destination_preferences" in analysis_result:
-                        context_parts.append("- Age group destination preferences available")
-                    if "age_group_time_preferences" in analysis_result:
-                        context_parts.append("- Age group time preferences available")
-            
-            # For monthly analysis queries
-            elif query.get("type") == "monthly_analysis":
-                analysis_result = self.data_processor.analyze_monthly_trends(filters)
-                if analysis_result and not analysis_result.get("error"):
-                    context_parts.append("- Monthly Trend Analysis Results:")
-                    context_parts.append(f"  * Total trips analyzed: {analysis_result.get('total_trips', 0)}")
-                    context_parts.append(f"  * Most active month: {analysis_result.get('most_active_month', 'N/A')}")
-                    
-                    monthly_dist = analysis_result.get("monthly_distribution", {})
-                    if monthly_dist:
-                        context_parts.append("- Monthly distribution:")
-                        for month, count in monthly_dist.items():
-                            context_parts.append(f"    * Month {month}: {count} trips")
-                    
-                    if "monthly_group_trends" in analysis_result:
-                        context_parts.append("- Monthly group size trends available")
-                    if "monthly_destination_trends" in analysis_result:
-                        context_parts.append("- Monthly destination trends available")
-            
-            # For large groups queries
-            elif query.get("type") == "large_groups":
-                context_parts.append("- Large group trip analysis:")
-                if 'Total Passengers' in data.columns:
-                    large_groups = data[data['Total Passengers'] >= 6]
-                    context_parts.append(f"  * Total large group trips: {len(large_groups)}")
-                    if len(large_groups) > 0:
-                        context_parts.append(f"  * Average group size: {large_groups['Total Passengers'].mean():.2f}")
-                        context_parts.append(f"  * Largest group: {large_groups['Total Passengers'].max()}")
-            
             # For general queries, provide comprehensive data context
             elif query.get("type") == "general" or query is None:
                 context_parts.append("- Comprehensive data analysis available")
@@ -835,72 +693,7 @@ class FetiiChatbot:
                         context_parts.append(sample_data)
                     else:
                         sample_data = data.head(5).to_string(index=False)
-                    context_parts.append(sample_data)
-            elif query.get("type") == "destination":
-                destination = query.get('destination', 'specified destination')
-                context_parts.append(f"- Trips to {destination}: {len(data)}")
-                
-                # Add specific details about the destination
-                if 'group_size' in data.columns:
-                    total_passengers = data['group_size'].sum()
-                    avg_group_size = data['group_size'].mean()
-                    context_parts.append(f"- Total passengers to {destination}: {total_passengers}")
-                    context_parts.append(f"- Average group size: {avg_group_size:.1f}")
-                
-                if 'pickup_time' in data.columns:
-                    # Get time patterns
-                    data_with_time = data.dropna(subset=['pickup_time'])
-                    if not data_with_time.empty:
-                        data_with_time['hour'] = pd.to_datetime(data_with_time['pickup_time']).dt.hour
-                        peak_hour = data_with_time['hour'].mode().iloc[0] if not data_with_time['hour'].mode().empty else "Unknown"
-                        context_parts.append(f"- Peak hour for {destination}: {peak_hour}:00")
-                
-                # Show sample trips
-                if len(data) > 0:
-                    context_parts.append(f"- Sample trips to {destination}:")
-                    sample_trips = data.head(3)[['pickup_location', 'dropoff_location', 'group_size']].to_string(index=False)
-                    context_parts.append(sample_trips)
-                    
-            elif query.get("type") == "age_group_destinations":
-                age_group = query.get('age_group', 'specified age group')
-                day_filter = f" on {query.get('day_of_week')}" if query.get('day_of_week') else ""
-                context_parts.append(f"- Top destinations for {age_group} year-olds{day_filter}:")
-                
-                # Show top destinations with counts
-                for i, (dest, count) in enumerate(data.head(5).items(), 1):
-                    context_parts.append(f"  {i}. {dest}: {count} trips")
-                
-                if len(data) > 0:
-                    total_trips = data.sum()
-                    context_parts.append(f"- Total trips by {age_group} year-olds{day_filter}: {total_trips}")
-                    
-            elif query.get("type") == "large_groups":
-                context_parts.append(f"- Large group trips (6+ people): {len(data)}")
-                if 'group_size' in data.columns:
-                    total_passengers = data['group_size'].sum()
-                    avg_group_size = data['group_size'].mean()
-                    context_parts.append(f"- Total passengers in large groups: {total_passengers}")
-                    context_parts.append(f"- Average group size: {avg_group_size:.1f}")
-                
-                # Show top destinations for large groups
-                if 'dropoff_location' in data.columns:
-                    top_dests = data['dropoff_location'].value_counts().head(3)
-                    context_parts.append(f"- Top destinations for large groups:")
-                    for dest, count in top_dests.items():
-                        context_parts.append(f"  - {dest}: {count} trips")
-                        
-            elif query.get("type") == "hourly_distribution":
-                context_parts.append(f"- Hourly trip distribution:")
-                for hour, count in data.head(10).items():
-                    context_parts.append(f"  {hour}:00 - {count} trips")
-                peak_hour = data.idxmax() if not data.empty else "Unknown"
-                context_parts.append(f"- Peak hour: {peak_hour}:00")
-                
-            elif query.get("type") == "top_destinations":
-                context_parts.append(f"- Top destinations overall:")
-                for i, (dest, count) in enumerate(data.head(10).items(), 1):
-                    context_parts.append(f"  {i}. {dest}: {count} trips")
-                    
+                        context_parts.append(sample_data)
         else:
             context_parts.append("No specific data found for this query.")
             context_parts.append("Available data columns:")
@@ -925,5 +718,3 @@ class FetiiChatbot:
         """Clear conversation memory"""
         self.memory.clear()
         self._setup_system_prompt()
-    
-    # Removed generate_sample_data method - using real FetiiAI data instead
