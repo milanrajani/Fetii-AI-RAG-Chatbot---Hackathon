@@ -204,9 +204,43 @@ def auto_load_app():
             except Exception as e:
                 st.error(f"❌ Error loading data: {str(e)}")
         else:
-            st.warning("⚠️ No Excel data file found in directory")
+            # Check if we're in a deployed environment and try to load pre-loaded data
+            if is_deployed_environment():
+                st.info("🌐 Deployment environment detected - checking for pre-loaded data...")
+                # Try to load the pre-loaded FetiiAI_Data_Austin.xlsx file
+                if os.path.exists('FetiiAI_Data_Austin.xlsx'):
+                    try:
+                        with st.spinner("📊 Loading pre-loaded FetiiAI_Data_Austin.xlsx..."):
+                            success = load_data_directly('FetiiAI_Data_Austin.xlsx')
+                            if success:
+                                st.session_state.data_loaded = True
+                                st.session_state.loaded_data_file = 'FetiiAI_Data_Austin.xlsx (Pre-loaded)'
+                                save_session_data()
+                                st.success("✅ Pre-loaded data loaded successfully!")
+                                st.info("💡 Upload your own data file using the file uploader in the sidebar")
+                            else:
+                                st.warning("⚠️ Failed to load pre-loaded data")
+                    except Exception as e:
+                        st.error(f"❌ Error loading pre-loaded data: {str(e)}")
+                else:
+                    st.warning("⚠️ No pre-loaded data file found in deployment")
+                    st.info("💡 Upload your data file using the file uploader in the sidebar")
+            else:
+                st.warning("⚠️ No Excel data file found in directory")
     
     st.session_state.auto_loaded = True
+
+def is_deployed_environment():
+    """Check if we're running in a deployed environment"""
+    # Check for common deployment indicators
+    deployed_indicators = [
+        'STREAMLIT_SERVER_PORT' in os.environ,
+        'PORT' in os.environ,
+        'DYNO' in os.environ,  # Heroku
+        'RAILWAY_ENVIRONMENT' in os.environ,  # Railway
+        'STREAMLIT_CLOUD' in os.environ  # Streamlit Cloud
+    ]
+    return any(deployed_indicators)
 
 def load_data_directly(file_path):
     """Load data directly from file and process it"""
@@ -274,6 +308,8 @@ def load_data_directly(file_path):
         import traceback
         st.error(f"Traceback: {traceback.format_exc()}")
         return False
+
+# Sample data generation function removed - using pre-loaded data instead
 
 def map_fetii_columns(df):
     """Map Fetii dataset column names to expected names"""
@@ -1309,11 +1345,11 @@ def render_main_content():
         reports_interface()
 
 def force_load_data():
-    """Force load data from FetiiAI_Data_Austin.xlsx if available"""
+    """Force load data from FetiiAI_Data_Austin.xlsx if available, or generate sample data for deployment"""
     if st.session_state.data_loaded:
         return
     
-    # Check if file exists
+    # Check if file exists locally
     if os.path.exists('FetiiAI_Data_Austin.xlsx'):
         try:
             st.info("🚀 Auto-loading FetiiAI_Data_Austin.xlsx...")
@@ -1335,9 +1371,32 @@ def force_load_data():
             import traceback
             st.error(f"Traceback: {traceback.format_exc()}")
     else:
-        st.warning("⚠️ FetiiAI_Data_Austin.xlsx not found in directory")
-        st.info(f"Current directory: {os.getcwd()}")
-        st.info(f"Files in directory: {os.listdir('.')}")
+        # For deployment - try to load pre-loaded data
+        st.info("🌐 Deployment mode detected - checking for pre-loaded data...")
+        if os.path.exists('FetiiAI_Data_Austin.xlsx'):
+            try:
+                st.info("📁 Found pre-loaded FetiiAI_Data_Austin.xlsx file")
+                st.info(f"📁 File size: {os.path.getsize('FetiiAI_Data_Austin.xlsx')} bytes")
+                
+                with st.spinner("📊 Loading pre-loaded data..."):
+                    success = load_data_directly('FetiiAI_Data_Austin.xlsx')
+                    if success:
+                        st.session_state.data_loaded = True
+                        st.session_state.loaded_data_file = 'FetiiAI_Data_Austin.xlsx (Pre-loaded)'
+                        save_session_data()
+                        st.success("✅ Pre-loaded data loaded successfully!")
+                        st.info(f"📊 Loaded {len(st.session_state.trips_data)} trips")
+                        st.info("💡 Upload your own data file using the file uploader in the sidebar")
+                        st.rerun()
+                    else:
+                        st.error("❌ Failed to load pre-loaded data")
+            except Exception as e:
+                st.error(f"❌ Error loading pre-loaded data: {str(e)}")
+                import traceback
+                st.error(f"Traceback: {traceback.format_exc()}")
+        else:
+            st.warning("⚠️ No pre-loaded data file found in deployment")
+            st.info("💡 Upload your data file using the file uploader in the sidebar")
 
 def main():
     """Main application function"""
