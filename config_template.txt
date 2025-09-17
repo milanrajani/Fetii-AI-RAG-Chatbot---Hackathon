@@ -1,0 +1,5 @@
+# FetiiAI Configuration File
+# Replace YOUR_API_KEY_HERE with your actual OpenAI API key
+# Save this file as 'config.txt' in the same directory as app.py
+
+YOUR_API_KEY_HERE
